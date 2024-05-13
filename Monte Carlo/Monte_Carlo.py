@@ -5,12 +5,12 @@ import pickle
 
 
 def solve(train=True, render=False):
-    env = gym.make('CartPole-v1', render_mode='human' if render else None)
+    env = gym.make("CartPole-v1", render_mode="human" if render else None)
 
     # Divide position, velocity, pole angle, and pole angular velocity into segments
     pos_space = np.linspace(-2.4, 2.4, 10)
     vel_space = np.linspace(-4, 4, 10)
-    ang_space = np.linspace(-.2095, .2095, 10)
+    ang_space = np.linspace(-0.2095, 0.2095, 10)
     ang_vel_space = np.linspace(-4, 4, 10)
 
     lr = 0.1  # alpha or learning rate
@@ -23,13 +23,17 @@ def solve(train=True, render=False):
     rewards_per_episode = []
 
     if train:
-        MC = np.zeros((len(pos_space) + 1,
-                          len(vel_space) + 1,
-                          len(ang_space) + 1,
-                          len(ang_vel_space) + 1,
-                          env.action_space.n))
+        MC = np.zeros(
+            (
+                len(pos_space) + 1,
+                len(vel_space) + 1,
+                len(ang_space) + 1,
+                len(ang_vel_space) + 1,
+                env.action_space.n,
+            )
+        )
     else:
-        MC_SAVED = open('cartpole_monte_carlo.pkl', 'rb')
+        MC_SAVED = open("cartpole_monte_carlo.pkl", "rb")
         MC = pickle.load(MC_SAVED)
         MC_SAVED.close()
 
@@ -67,14 +71,22 @@ def solve(train=True, render=False):
                 new_action = np.argmax(MC[state_p, state_v, state_a, state_av, :])
 
             if train:
-                MC[state_p, state_v, state_a, state_av, action] = \
-                    MC[state_p, state_v, state_a, state_av, action] + \
-                    lr * (reward +
-                          d_factor * (
-                              MC[new_state_p, new_state_v, new_state_a,
-                              new_state_av, new_action]) - MC[
-                              state_p, state_v, state_a, state_av, action]
-                          )
+                MC[state_p, state_v, state_a, state_av, action] = MC[
+                    state_p, state_v, state_a, state_av, action
+                ] + lr * (
+                    reward
+                    + d_factor
+                    * (
+                        MC[
+                            new_state_p,
+                            new_state_v,
+                            new_state_a,
+                            new_state_av,
+                            new_action,
+                        ]
+                    )
+                    - MC[state_p, state_v, state_a, state_av, action]
+                )
 
             state = new_state
             action = new_action
@@ -85,19 +97,25 @@ def solve(train=True, render=False):
             rewards += reward
 
         if not train:
-            print(f'Episode: {i}  Rewards: {rewards}')
+            print(f"Episode: {i}  Rewards: {rewards}")
 
         rewards_per_episode.append(rewards)
-        mean_rewards = np.mean(rewards_per_episode[len(rewards_per_episode) - 100:])
+        mean_rewards = np.mean(rewards_per_episode[len(rewards_per_episode) - 100 :])
 
         if train and i % 100 == 0:
-            print(f'Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}')
+            print(
+                f"Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}"
+            )
             with open("SARSA.txt", "a") as MC_SAVED:
-                print(f'Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}',
-                      file=MC_SAVED)
+                print(
+                    f"Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}",
+                    file=MC_SAVED,
+                )
 
         if mean_rewards >= 195 and train:
-            print(f'Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}')
+            print(
+                f"Episode: {i} {rewards}  Epsilon: {eps:0.2f}  Mean Rewards {mean_rewards:0.1f}"
+            )
             break
 
         eps = max(0, eps - eps_decay)
@@ -106,18 +124,18 @@ def solve(train=True, render=False):
 
     # Save Monte Carlo table to file
     if train:
-        MC_SAVED = open('cartpole_monte_carlo.pkl', 'wb')
+        MC_SAVED = open("cartpole_monte_carlo.pkl", "wb")
         pickle.dump(MC, MC_SAVED)
         MC_SAVED.close()
 
     mean_rewards = []
     for t in range(i):
-        mean_rewards.append(np.mean(rewards_per_episode[max(0, t - 100):(t + 1)]))
+        mean_rewards.append(np.mean(rewards_per_episode[max(0, t - 100) : (t + 1)]))
     plt.plot(mean_rewards)
-    plt.savefig('cartpole_monte_carlo.png')
+    plt.savefig("cartpole_monte_carlo.png")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # for training
     # solve(train=True, render=False)
     # for rendering
